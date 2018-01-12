@@ -4,15 +4,17 @@ import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
 
 data Model = Model Point [Bone] deriving (Show)
-data Bone = Bone Float Float deriving (Show)
+data Bone = Bone Float deriving (Show)
+
+data FKData = FKData Float deriving (Show)
 
 displayChainOfDots joint = line joint : map (dotAt red 3) joint
 
-toPic (Model start bones) = Pictures (displayChainOfDots joints)
+toPic (Model start bones) angles = Pictures (displayChainOfDots joints)
   where
-    joints = map fst $ scanl nextJoint (start, 0) bones
+    joints = map fst $ scanl nextJoint (start, 0) (zip angles bones)
 
-    nextJoint (currentP, currentAngle) (Bone l a) = (nextP, nextAngle)
+    nextJoint (currentP, currentAngle) (FKData a, Bone l) = (nextP, nextAngle)
       where
         nextAngle = currentAngle + a
         nextP = addLengthWithAngle currentP l nextAngle
@@ -21,40 +23,24 @@ addLengthWithAngle (x, y) l a = (x + l * cos a, y + l * sin a)
 
 dotAt c s (x, y) = translate x y (color c (circleSolid s))
 
-model t = Model (0, 0) [
-  Bone 100 t,
-  Bone 50 (pi / 3),
-  Bone 10 ((-pi / 2))]
+model = Model (0, 0) (map Bone [100, 50, 10])
 
-run = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (\t -> toPic (model t))
+fkdata t = map FKData [t, pi / 2, -pi / 2]
 
-data ModelIK = ModelIK Point [BoneIK] deriving (Show)
-data BoneIK = BoneIK Float deriving (Show)
+run = animate (InWindow "Nice Window" (200, 200) (10, 10)) white (\t -> toPic model (fkdata t))
 
-{-
-modelIK = ModelIK (0, 0)
-  (take 3 [ BoneIK 100,
-    BoneIK 50,
-    BoneIK 10,
-    BoneIK 10,
-    BoneIK 200,
-    BoneIK 10,
-    BoneIK 100
-  ])
--}
-modelIK = ModelIK (0, 0)
-  (replicate 7 (BoneIK 20))
+modelIK = Model (0, 0) (map Bone (replicate 7 20))
 
-getChain (ModelIK start bones) = scanl fStart start bones
+getChain (Model start bones) = scanl fStart start bones
   where
-    fStart (cx, cy) (BoneIK size) = (cx - size, cy)
+    fStart (cx, cy) (Bone size) = (cx - size, cy)
 
-solveIK :: ModelIK -> Point -> [Point]
-solveIK model@(ModelIK start bones) target = solvedChain
+solveIK :: Model -> Point -> [Point]
+solveIK model@(Model start bones) target = solvedChain
   where
     startingPoints = getChain model
 
-    sizes = map (\(BoneIK s) -> s) bones
+    sizes = map (\(Bone s) -> s) bones
 
     solvedChain = (iterate (completeStep sizes start target) startingPoints) !! 1000
 
@@ -83,7 +69,7 @@ vecMul f (x, y) = (f * x, f * y)
 runIK = play (InWindow "Nice Window" (200, 200) (10, 10)) white 24 (0, (0, 0)) (toPicIK modelIK) inputF stepWorld
 
 toPicIK model (t, target) = Pictures $ (dotAt blue 5 startingPoint) : (dotAt green 5 target) : displayChainOfDots (solveIK model target)
-  where ModelIK startingPoint _ = model
+  where Model startingPoint _ = model
 
 inputF (EventMotion p) (t, _) = (t, p)
 inputF _ w = w
