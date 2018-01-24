@@ -23,6 +23,7 @@ library
                      , gloss
                      , linear
                      , containers
+                     , unordered-containers
                      , random
   hs-source-dirs:      src
   ghc-options: -Wall

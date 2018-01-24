@@ -4,7 +4,7 @@ module Main where
 import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
 
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as HashMap
 import qualified System.Random as Random
 
 import Data.Maybe (fromMaybe)
@@ -111,7 +111,7 @@ infixl 6 .+.
 infixl 6 .-.
 (V2 a b) .-. (V2 a' b') = V2 (a - a') (b - b')
 
-type Grid = Map.Map (Int, Int) [Particle]
+type Grid = HashMap.HashMap (Int, Int) [Particle]
 
 relax :: Float -> Particle -> [(Float, V2)] -> Particle
 relax dt p qs = p {position = position p .-. deltaPos}
@@ -141,7 +141,7 @@ dFriends radius grid p = do
           x <- [x0 - 1..x0 + 1]
           y <- [y0 - 1..y0 + 1]
 
-          part <- fromMaybe [] (Map.lookup (x, y) grid)
+          part <- fromMaybe [] (HashMap.lookup (x, y) grid)
 
           let d = distance (position p) (position part)
           guard (d <= radius)
@@ -155,7 +155,7 @@ distance (V2 x y) (V2 x' y') = sqrt (sqr (x - x') + sqr (y - y'))
 sqr v = v * v
 
 computeDensityGrid :: Float -> [Particle] -> Grid
-computeDensityGrid radius ps = Map.fromListWith (++) (map (\p -> (particuleHash radius p, [p])) ps)
+computeDensityGrid radius ps = HashMap.fromListWith (\[x] xs -> x:xs) (map (\p -> (particuleHash radius p, [p])) ps)
 
 particuleHash :: Float -> Particle -> (Int, Int)
 particuleHash radius p = (truncate (x / radius), truncate (y / radius))
