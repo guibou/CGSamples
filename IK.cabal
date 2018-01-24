@@ -16,11 +16,14 @@ extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules: IK
+  exposed-modules: Particles IK
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.9 && <4.11
                      , gloss
+                     , linear
+                     , containers
+                     , random
   hs-source-dirs:      src
   ghc-options: -Wall
   default-language:    Haskell2010
